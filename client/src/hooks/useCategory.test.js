@@ -18,7 +18,7 @@ describe("useCategory hook (EP/BVA + isolation)", () => {
     // initial assertion (BVA: empty before effect resolves)
     expect(result.current).toEqual([]);
 
-    
+
     await waitFor(() => expect(mockedAxios.get).toHaveBeenCalled());
     await waitFor(() => expect(result.current).toEqual([]));
   });
@@ -47,7 +47,7 @@ describe("useCategory hook (EP/BVA + isolation)", () => {
   });
 
   test("EP: axios failure -> logs error and keeps []", async () => {
-    const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    const logSpy = jest.spyOn(console, "log").mockImplementation(() => { });
     mockedAxios.get.mockRejectedValueOnce(new Error("network fail"));
 
     const { result } = renderHook(() => useCategory());

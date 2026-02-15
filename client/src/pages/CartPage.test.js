@@ -111,7 +111,7 @@ async function setup({
   await waitFor(() => expect(axios.get).toHaveBeenCalled());
 
   // 2) flush React update triggered by setClientToken
-  await act(async () => {});
+  await act(async () => { });
 
   return { setAuth, setCart };
 }
@@ -297,7 +297,7 @@ describe("Payment flow (EP: success/failure, BVA: disabled/enabled boundaries)",
   });
 
   test("EP: payment failure -> logs error, does NOT clear cart/navigate", async () => {
-    const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    const logSpy = jest.spyOn(console, "log").mockImplementation(() => { });
     const setCart = jest.fn();
 
     mockDropinInstance = {
