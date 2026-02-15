@@ -1,15 +1,6 @@
 /**
- * CartPage.test.js
- *
- * Tools: Jest + React Testing Library
- *
- * Practices used (documented per suite):
- * - EP: guest vs logged-in, empty vs non-empty cart, address present vs missing,
- *   token present vs missing, clientToken present vs missing, axios success vs failure
- * - BVA: cart size 0 vs 1 vs 2, total = 0 vs >0, payment button disabled/enabled boundaries
- * - Isolation: mocks for axios, DropIn, contexts, router, toast, localStorage
- * - Bug detection: includes tests that will FAIL if CartPage has logic bugs (e.g., string prices summed incorrectly)
- */
+ * Test written by Ng Hong Ray, A0253509A 
+**/
 
 import React from "react";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
