@@ -1,6 +1,18 @@
 /**
- * Test written by Ng Hong Ray, A0253509A 
-**/
+ * Test written by Ng Hong Ray, A0253509A
+ *
+ * Testing Principles Applied:
+ *
+ * 1. Equivalence Partitioning 
+ *  - localStorage returns null → cart defaults to []
+ *  - localStorage returns valid JSON (empty array)
+ *  - localStorage returns valid non-empty JSON
+ *
+ * 2. Boundary Value Analysis 
+ *  - Smallest valid payload: "[]"
+ *  - Minimal non-empty cart: 1 item array
+ *  
+ */
 import React from "react";
 import { act } from "react-dom/test-utils";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -32,15 +44,14 @@ describe("CartProvider / useCart", () => {
   let getItemSpy;
 
   beforeEach(() => {
-    // Reset spies/mocks between tests (Isolation)
+    // Reset spies/mocks between tests
     jest.restoreAllMocks();
 
-    // Ensure localStorage exists & is controllable in Jest env
-    // Spy on getItem for assertions (Interaction testing)
+    // Spy on getItem for assertions 
     getItemSpy = jest.spyOn(Storage.prototype, "getItem");
   });
 
-  // Equivalence Partitioning (EP)
+  // Equivalence Partitioning
   test("When localStorage has no cart (null), defaults to empty array []", () => {
     getItemSpy.mockReturnValueOnce(null);
 
@@ -51,7 +62,7 @@ describe("CartProvider / useCart", () => {
     expect(screen.getByTestId("cart").textContent).toBe("[]");
   });
 
-  // Boundary Value Analysis (BVA) tests
+  // Boundary Value Analysis
   test('When localStorage has smallest valid cart payload "[]", cart becomes []', () => {
     getItemSpy.mockReturnValueOnce("[]");
 
@@ -61,7 +72,7 @@ describe("CartProvider / useCart", () => {
     expect(screen.getByTestId("cart").textContent).toBe("[]");
   });
 
-  // Equivalence Partitioning (EP) & Boundary Value Analysis (BVA)
+  // Equivalence Partitioning & Boundary Value Analysis 
   test("When localStorage has a valid non-empty cart JSON, it hydrates state", () => {
     // Boundary: minimal non-empty cart array (1 item)
     const payload = JSON.stringify([{ id: 123, qty: 1 }]);
@@ -73,6 +84,7 @@ describe("CartProvider / useCart", () => {
     expect(screen.getByTestId("cart").textContent).toBe(payload);
   });
 
+  // frontend state update test (not really needed since it's just useState, but good)
   test("State update: setCart updates cart value from consumer interaction", async () => {
     getItemSpy.mockReturnValueOnce(null);
 
@@ -105,16 +117,15 @@ describe("CartProvider / useCart", () => {
     expect(getItemSpy).toHaveBeenCalledTimes(1);
   });
 
-  test("Negative/boundary: using useCart without CartProvider yields undefined context", () => {
-    // Boundary/negative: Consumer WITHOUT provider should throw or behave incorrectly.
-    // Validate current behavior: useCart() returns undefined, destructuring would crash.
-    // So test by calling the hook in a component.
-    function SafeConsumer() {
-      const ctx = useCart(); // undefined because no Provider
-      return <div data-testid="ctx">{String(ctx)}</div>;
+  // Misuse scenarios
+  test("useCart throws if used outside CartProvider", () => {
+    function BadConsumer() {
+      useCart();
+      return null;
     }
 
-    render(<SafeConsumer />);
-    expect(screen.getByTestId("ctx").textContent).toBe("undefined");
+    expect(() => render(<BadConsumer />)).toThrow(
+      "useCart must be used within a CartProvider"
+    );
   });
 });

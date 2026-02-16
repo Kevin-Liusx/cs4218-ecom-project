@@ -12,7 +12,7 @@ export const createCategoryController = async (req, res) => {
     if (existingCategory) {
       return res.status(200).send({
         success: true,
-        message: "Category Already Exisits",
+        message: "Category Already Exists",
       });
     }
     const category = await new categoryModel({
@@ -21,7 +21,7 @@ export const createCategoryController = async (req, res) => {
     }).save();
     res.status(201).send({
       success: true,
-      message: "new category created",
+      message: "New category created",
       category,
     });
   } catch (error) {
@@ -44,6 +44,15 @@ export const updateCategoryController = async (req, res) => {
       { name, slug: slugify(name) },
       { new: true }
     );
+
+    // if category not found, return 404 instead of creating a new one
+    if (!category) {
+      return res.status(404).send({
+        success: false,
+        message: "Category not found",
+      });
+    }
+
     res.status(200).send({
       success: true,
       messsage: "Category Updated Successfully",
@@ -84,7 +93,7 @@ export const singleCategoryController = async (req, res) => {
     const category = await categoryModel.findOne({ slug: req.params.slug });
     res.status(200).send({
       success: true,
-      message: "Get SIngle Category SUccessfully",
+      message: "Get Single Category Successfully",
       category,
     });
   } catch (error) {
@@ -110,7 +119,7 @@ export const deleteCategoryCOntroller = async (req, res) => {
     console.log(error);
     res.status(500).send({
       success: false,
-      message: "error while deleting category",
+      message: "Error while deleting category",
       error,
     });
   }

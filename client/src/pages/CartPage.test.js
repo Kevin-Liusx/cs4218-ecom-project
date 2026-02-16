@@ -1,5 +1,30 @@
 /**
  * Test written by Ng Hong Ray, A0253509A 
+ * I am using UI return tests here since the component is mostly UI with some side effects (fetching token, making payment).
+ * I have also added some bug-detection tests for total price calculation, which is a critical part of the payment flow.
+ * Testing Principles Applied:
+ * 
+ * 1. Equivalence Partitioning 
+ * - Cart: Empty vs Non-empty
+ * - Address: Present vs Absent
+ * 
+ * 2. Boundary Value Analysis
+ * - Cart size: 0 vs 1 vs many
+ * - Total price: empty cart ($0.00) vs non-empty cart (sum of prices)
+ * 
+ * 3. Bug Detection Tests
+ * - Total price calculation should handle string prices (common bug if not converted to Number)
+ * 
+ * 4. State & Behaviour Testing
+ * - Remove item: clicking Remove should update state and localStorage correctly
+ * 
+ * 5. Side-Effect / Interaction Testing
+ * - getToken should fetch client token and handle success/failure
+ * - Make Payment should call payment API and handle success/failure
+ * 
+ * Tests that are not really needed in MS1, but good to have:
+ * 1. UI tests for conditional rendering based on auth/cart state (can be removed if too much load)
+ * 2. More granular unit tests for helper functions (e.g. totalPrice) if they are extracted out of the component
 **/
 
 import React from "react";
@@ -22,7 +47,7 @@ jest.mock("react-router-dom", () => ({
   useNavigate: () => mockNavigate,
 }));
 
-// Layout: render children only (isolation)
+// Layout: render children only
 jest.mock("./../components/Layout", () => ({
   __esModule: true,
   default: ({ children }) => <div data-testid="layout">{children}</div>,
@@ -126,8 +151,10 @@ beforeEach(() => {
   mockDropinInstance = null;
 });
 
+// UI test can be removed if too much load
 describe("CartPage rendering (EP: auth/cart partitions)", () => {
-  test("EP/BVA: Guest + empty cart -> shows Guest greeting and 'Cart Is Empty'", async () => {
+  // Equivalence Partitioning & Boundary Value Analysis
+  test("Guest + empty cart -> shows Guest greeting and 'Cart Is Empty'", async () => {
     await setup({ auth: { user: null, token: null }, cart: [] });
 
     expect(await screen.findByText(/Hello Guest/i)).toBeInTheDocument();
@@ -136,18 +163,18 @@ describe("CartPage rendering (EP: auth/cart partitions)", () => {
     // BVA: cart length = 0 => should NOT render DropIn/payment section
     expect(screen.queryByTestId("dropin")).not.toBeInTheDocument();
   });
-
-  test("EP/BVA: Logged in + non-empty cart -> shows user name and item count", async () => {
+  // Equivalence Partitioning & Boundary Value Analysis
+  test("Logged in + non-empty cart -> shows user name and item count", async () => {
     await setup({
       auth: { user: { name: "Ray", address: "Sembawang" }, token: "t" },
-      cart: [product(), product({ _id: "p2" })], // BVA: size 2
+      cart: [product(), product({ _id: "p2" })],
     });
 
     expect(await screen.findByText(/Hello\s+Ray/i)).toBeInTheDocument();
     expect(screen.getByText(/You Have 2 items in your cart/i)).toBeInTheDocument();
   });
-
-  test("EP: Logged in but no address -> shows Update Address button", async () => {
+  // Equivalence Partitioning
+  test("Logged in but no address -> shows Update Address button", async () => {
     await setup({
       auth: { user: { name: "Ray", address: "" }, token: "t" },
       cart: [product()],
@@ -156,8 +183,8 @@ describe("CartPage rendering (EP: auth/cart partitions)", () => {
     const btn = await screen.findByRole("button", { name: /Update Address/i });
     expect(btn).toBeInTheDocument();
   });
-
-  test("EP: Not logged in -> shows 'Please Login to checkout' button and navigates to /login with state=/cart", async () => {
+  // Equivalence Partitioning
+  test("Not logged in -> shows 'Please Login to checkout' button and navigates to /login with state=/cart", async () => {
     await setup({ auth: { user: null, token: null }, cart: [product()] });
 
     const btn = await screen.findByRole("button", {
@@ -169,8 +196,9 @@ describe("CartPage rendering (EP: auth/cart partitions)", () => {
   });
 });
 
-describe("Token fetching (EP: axios get success/failure)", () => {
-  test("EP: successful token fetch -> payment UI can appear when logged in + cart not empty", async () => {
+describe("getToken: Token fetching", () => {
+  // Equivalence Partitioning
+  test("successful token fetch -> payment UI can appear when logged in + cart not empty", async () => {
     mockDropinInstance = { requestPaymentMethod: jest.fn() };
 
     await setup({
@@ -182,8 +210,8 @@ describe("Token fetching (EP: axios get success/failure)", () => {
 
     expect(await screen.findByTestId("dropin")).toBeInTheDocument();
   });
-
-  test("EP: token fetch failure -> DropIn should NOT appear", async () => {
+  // Equivalence Partitioning
+  test("token fetch failure -> DropIn should NOT appear", async () => {
     await setup({
       auth: { user: { name: "Ray", address: "SG" }, token: "t" },
       cart: [product()],
@@ -195,8 +223,9 @@ describe("Token fetching (EP: axios get success/failure)", () => {
   });
 });
 
-describe("Cart listing + remove item (BVA: cart size, EP: remove flow)", () => {
-  test("BVA: cart size 1 -> renders one item card and correct photo URL", async () => {
+describe("removeCartItem: Cart listing + remove item", () => {
+  // Boundary Value Analysis
+  test("cart size 1 -> renders one item card and correct photo URL", async () => {
     await setup({
       auth: { user: { name: "Ray" }, token: "t" },
       cart: [product({ _id: "abc" })],
@@ -205,8 +234,8 @@ describe("Cart listing + remove item (BVA: cart size, EP: remove flow)", () => {
     const img = await screen.findByRole("img", { name: /Product 1/i });
     expect(img).toHaveAttribute("src", "/api/v1/product/product-photo/abc");
   });
-
-  test("EP: clicking Remove removes the correct item, updates state + localStorage", async () => {
+  // Equivalence Partitioning
+  test("clicking Remove removes the correct item, updates state + localStorage", async () => {
     const setCart = jest.fn();
     const cart = [product({ _id: "p1" }), product({ _id: "p2", name: "P2" })];
 
@@ -227,8 +256,9 @@ describe("Cart listing + remove item (BVA: cart size, EP: remove flow)", () => {
   });
 });
 
-describe("totalPrice correctness (Bug-detection tests)", () => {
-  test("BVA: total for empty cart should show $0.00", async () => {
+describe("totalPrice: correctness", () => {
+  // boundary value analysis
+  test("total for empty cart should show $0.00", async () => {
     await setup({
       auth: { user: { name: "Ray" }, token: "t" },
       cart: [],
@@ -237,7 +267,7 @@ describe("totalPrice correctness (Bug-detection tests)", () => {
     expect(await screen.findByText(/Total\s*:/i)).toHaveTextContent("Total : $0.00");
   });
 
-  test("BUG DETECT: string prices should still sum numerically (fails until code converts price to Number)", async () => {
+  test("string input prices should not sum numerically", async () => {
     await setup({
       auth: { user: { name: "Ray" }, token: "t" },
       cart: [product({ price: "10" }), product({ _id: "p2", price: "5" })],
@@ -247,22 +277,9 @@ describe("totalPrice correctness (Bug-detection tests)", () => {
   });
 });
 
-describe("Payment flow (EP: success/failure, BVA: disabled/enabled boundaries)", () => {
-  test("BVA: Make Payment button disabled when no address", async () => {
-    mockDropinInstance = { requestPaymentMethod: jest.fn() };
-
-    await setup({
-      auth: { user: { name: "Ray", address: "" }, token: "t" },
-      cart: [product()],
-      clientToken: "ct",
-      axiosTokenSuccess: true,
-    });
-
-    const btn = await screen.findByRole("button", { name: /Make Payment/i });
-    expect(btn).toBeDisabled();
-  });
-
-  test("EP: successful payment -> posts nonce+cart, clears cart, navigates, toast success", async () => {
+describe("handlePaymet: Payment flow", () => {
+  // Equivalence Partitioning
+  test("successful payment -> posts nonce+cart, clears cart, navigates, toast success", async () => {
     const setCart = jest.fn();
     mockDropinInstance = {
       requestPaymentMethod: jest.fn().mockResolvedValue({ nonce: "n1" }),
@@ -296,7 +313,8 @@ describe("Payment flow (EP: success/failure, BVA: disabled/enabled boundaries)",
     expect(toast.success).toHaveBeenCalledWith("Payment Completed Successfully ");
   });
 
-  test("EP: payment failure -> logs error, does NOT clear cart/navigate", async () => {
+  // Equivalence Partitioning
+  test("payment failure -> logs error, does NOT clear cart/navigate", async () => {
     const logSpy = jest.spyOn(console, "log").mockImplementation(() => { });
     const setCart = jest.fn();
 

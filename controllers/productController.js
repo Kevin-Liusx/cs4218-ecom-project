@@ -345,7 +345,7 @@ export const brainTreePaymentController = async (req, res) => {
   try {
     const { nonce, cart } = req.body || {};
 
-    // Basic validation (prevents NaN totals + missing data)
+    // Validation (prevents NaN totals + missing data)
     if (!nonce) return res.status(400).send({ error: "Missing payment nonce" });
     if (!Array.isArray(cart)) return res.status(400).send({ error: "Cart must be an array" });
     if (!req.user?._id) return res.status(401).send({ error: "Unauthorized" });
@@ -359,14 +359,20 @@ export const brainTreePaymentController = async (req, res) => {
       total += price;
     }
 
-    // Optional: enforce non-negative total (empty cart => 0 is allowed)
+    // enforce non-negative total (empty cart > 0 is allowed)
+    // just in case eventhough we already have item-level validation, we do this as a sanity check before calling the payment gateway
     if (!Number.isFinite(total) || total < 0) {
       return res.status(400).send({ error: "Invalid total amount" });
     }
 
+    // guard against empty cart (total=0 is allowed, but we don't want to process payments with no items)
+    if (cart.length === 0) {
+      return res.status(400).send({ error: "Cart cannot be empty" });
+    }
+
     return gateway.transaction.sale(
       {
-        amount: total.toFixed(2), // braintree expects a string/decimal-like amount
+        amount: total.toFixed(2), // expects a string/decimal-like amount
         paymentMethodNonce: nonce,
         options: { submitForSettlement: true },
       },

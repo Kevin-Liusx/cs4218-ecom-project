@@ -1,3 +1,23 @@
+/**
+ * Test written by Ng Hong Ray, A0253509A
+ *
+ * I am testing this custom hook using renderHook because it has minimal UI and mainly consists of:
+ * - an initial state
+ * - a useEffect side effect (axios GET)
+ * - safe state updates depending on API response shape
+ *
+ * Testing Principles Applied:
+ *
+ * 1. Equivalence Partitioning 
+ * - API outcome: Success vs Failure
+ * - Success payload: category present vs category missing
+ *
+ * 2. Boundary Value Analysis 
+ * - categories length: 0 (empty list) vs 1 (non-empty list)
+ * - initial state before effect resolves: []
+ *
+ **/
+
 import { renderHook, waitFor } from "@testing-library/react";
 import useCategory from "./useCategory";
 import axios from "axios";
@@ -5,17 +25,18 @@ import axios from "axios";
 jest.mock("axios");
 const mockedAxios = axios;
 
-describe("useCategory hook (EP/BVA + isolation)", () => {
+describe("useCategory hook", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  test("BVA: initial state -> []", async () => {
+  //Boundary Value Analysis
+  test("initial state -> []", async () => {
     mockedAxios.get.mockResolvedValueOnce({ data: { category: [] } });
 
     const { result } = renderHook(() => useCategory());
 
-    // initial assertion (BVA: empty before effect resolves)
+    // initial assertion (empty before effect resolves)
     expect(result.current).toEqual([]);
 
 
@@ -23,7 +44,8 @@ describe("useCategory hook (EP/BVA + isolation)", () => {
     await waitFor(() => expect(result.current).toEqual([]));
   });
 
-  test("EP/BVA: axios success + category present -> returns categories", async () => {
+  //Boundary Value Analysis & Equivalence Partitioning
+  test("axios success + category present -> returns categories", async () => {
     mockedAxios.get.mockResolvedValueOnce({
       data: { category: [{ _id: "1", name: "Cat1" }] },
     });
@@ -37,7 +59,8 @@ describe("useCategory hook (EP/BVA + isolation)", () => {
     expect(result.current).toHaveLength(1);
   });
 
-  test("EP: axios success but category missing -> remains []", async () => {
+  //Equivalence Partitioning
+  test("axios success but category missing -> remains []", async () => {
     mockedAxios.get.mockResolvedValueOnce({ data: {} });
 
     const { result } = renderHook(() => useCategory());
@@ -46,7 +69,8 @@ describe("useCategory hook (EP/BVA + isolation)", () => {
     await waitFor(() => expect(result.current).toEqual([]));
   });
 
-  test("EP: axios failure -> logs error and keeps []", async () => {
+  //Equivalence Partitioning
+  test("axios failure -> logs error and keeps []", async () => {
     const logSpy = jest.spyOn(console, "log").mockImplementation(() => { });
     mockedAxios.get.mockRejectedValueOnce(new Error("network fail"));
 
@@ -54,12 +78,13 @@ describe("useCategory hook (EP/BVA + isolation)", () => {
 
     await waitFor(() => expect(mockedAxios.get).toHaveBeenCalled());
     await waitFor(() => expect(logSpy).toHaveBeenCalled());
-
+    //check state is still empty array on error
     expect(result.current).toEqual([]);
     logSpy.mockRestore();
   });
 
-  test("BVA: axios success + empty list -> returns []", async () => {
+  //Boundary Value Analysis
+  test("Axios success + empty list -> returns []", async () => {
     mockedAxios.get.mockResolvedValueOnce({ data: { category: [] } });
 
     const { result } = renderHook(() => useCategory());

@@ -1,3 +1,23 @@
+/**
+ * Test written by Ng Hong Ray, A0253509A
+ *
+ * external dependencies (categoryModel, slugify) are mocked to avoid real DB
+ * or library calls, ensuring only controller logic is tested.
+ *
+ * Testing Principles Applied:
+ *
+ * 1. Equivalence Partitioning 
+ * - Create: missing name vs existing category vs new category
+ * - Update/Delete/get: success vs failure paths
+ *
+ * 2. Boundary Value Analysis 
+ * - Name field: undefined / empty string
+ *
+ * 3. Error Handling Verification
+ * - Database failures should return 500 and not crash
+ *
+ * Focus: Status codes, response payloads, and correct DB interactions.
+ */
 
 import { jest } from "@jest/globals";
 
@@ -22,7 +42,7 @@ jest.unstable_mockModule("../models/categoryModel.js", () => ({
 // 3) Import AFTER mocks
 const { default: slugify } = await import("slugify");
 const { default: categoryModel } = await import("../models/categoryModel.js");
-const controllers = await import("./categoryController.js"); // adjust path if needed
+const controllers = await import("./categoryController.js"); 
 
 const {
     createCategoryController,
@@ -39,14 +59,15 @@ const makeRes = () => {
     return res;
 };
 
-describe("Category Controllers (EP/BVA + isolation) [ESM]", () => {
+describe("Category Controllers", () => {
     beforeEach(() => {
         jest.clearAllMocks();
         slugify.mockImplementation((s) => `slug-${String(s)}`);
     });
 
     describe("createCategoryController", () => {
-        test("BVA: missing name -> 401 (Name is required)", async () => {
+        // Boundary Value Analysis
+        test("missing name -> 401 (Name is required)", async () => {
             const req = { body: {} };
             const res = makeRes();
 
@@ -56,7 +77,8 @@ describe("Category Controllers (EP/BVA + isolation) [ESM]", () => {
             expect(res.send).toHaveBeenCalledWith({ message: "Name is required" });
         });
 
-        test("BVA: empty string name -> 401 (Name is required)", async () => {
+        // Boundary Value Analysis
+        test("empty string name -> 401 (Name is required)", async () => {
             const req = { body: { name: "" } };
             const res = makeRes();
 
@@ -66,7 +88,8 @@ describe("Category Controllers (EP/BVA + isolation) [ESM]", () => {
             expect(res.send).toHaveBeenCalledWith({ message: "Name is required" });
         });
 
-        test("EP: existing category -> 200 (Category Already Exisits)", async () => {
+        // Equivalence Partitioning
+        test("existing category -> 200 (Category Already Exists)", async () => {
             const req = { body: { name: "Books" } };
             const res = makeRes();
 
@@ -78,11 +101,12 @@ describe("Category Controllers (EP/BVA + isolation) [ESM]", () => {
             expect(res.status).toHaveBeenCalledWith(200);
             expect(res.send).toHaveBeenCalledWith({
                 success: true,
-                message: "Category Already Exisits",
+                message: "Category Already Exists",
             });
         });
 
-        test("EP: new category -> 201 with saved category", async () => {
+        // Equivalence Partitioning
+        test("New category -> 201 with saved category", async () => {
             const req = { body: { name: "Electronics" } };
             const res = makeRes();
 
@@ -110,12 +134,13 @@ describe("Category Controllers (EP/BVA + isolation) [ESM]", () => {
             expect(res.status).toHaveBeenCalledWith(201);
             expect(res.send).toHaveBeenCalledWith({
                 success: true,
-                message: "new category created",
+                message: "New category created",
                 category: savedDoc,
             });
         });
 
-        test("EP: createCategoryController DB failure -> 500 + logs error", async () => {
+        //Equivalence Partitioning
+        test("createCategoryController DB failure -> 500 + logs error", async () => {
             const req = { body: { name: "Toys" } };
             const res = makeRes();
 
@@ -139,7 +164,8 @@ describe("Category Controllers (EP/BVA + isolation) [ESM]", () => {
     });
 
     describe("updateCategoryController", () => {
-        test("EP: valid update -> 200 + updated category", async () => {
+        //  Equivalence Partitioning
+        test("valid update -> 200 + updated category", async () => {
             const req = { body: { name: "NewName" }, params: { id: "123" } };
             const res = makeRes();
 
@@ -159,6 +185,22 @@ describe("Category Controllers (EP/BVA + isolation) [ESM]", () => {
                 success: true,
                 messsage: "Category Updated Successfully",
                 category: updated,
+            });
+        });
+        
+        // Equivalence Partitioning
+        test("ID not found -> 404", async () => {
+            const req = { body: { name: "X" }, params: { id: "bad" } };
+            const res = makeRes();
+
+            categoryModel.findByIdAndUpdate.mockResolvedValueOnce(null);
+
+            await updateCategoryController(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(404);
+            expect(res.send).toHaveBeenCalledWith({
+                success: false,
+                message: "Category not found",
             });
         });
 
@@ -181,7 +223,8 @@ describe("Category Controllers (EP/BVA + isolation) [ESM]", () => {
     });
 
     describe("categoryControlller (get all)", () => {
-        test("EP: returns all categories -> 200", async () => {
+        // Equivalence Partitioning
+        test("returns all categories -> 200", async () => {
             const req = {};
             const res = makeRes();
 
@@ -218,7 +261,8 @@ describe("Category Controllers (EP/BVA + isolation) [ESM]", () => {
     });
 
     describe("singleCategoryController", () => {
-        test("EP: slug exists -> 200 + category", async () => {
+        // Equivalence Partitioning
+        test("slug exists -> 200 + category", async () => {
             const req = { params: { slug: "books" } };
             const res = makeRes();
 
@@ -231,7 +275,7 @@ describe("Category Controllers (EP/BVA + isolation) [ESM]", () => {
             expect(res.status).toHaveBeenCalledWith(200);
             expect(res.send).toHaveBeenCalledWith({
                 success: true,
-                message: "Get SIngle Category SUccessfully",
+                message: "Get Single Category Successfully",
                 category: cat,
             });
         });
@@ -255,7 +299,8 @@ describe("Category Controllers (EP/BVA + isolation) [ESM]", () => {
     });
 
     describe("deleteCategoryCOntroller", () => {
-        test("EP: valid delete -> 200", async () => {
+        //Equivalence Partitioning
+        test("valid delete -> 200", async () => {
             const req = { params: { id: "123" } };
             const res = makeRes();
 
@@ -283,7 +328,7 @@ describe("Category Controllers (EP/BVA + isolation) [ESM]", () => {
             expect(res.send).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: "error while deleting category",
+                    message: "Error while deleting category",
                 })
             );
         });
