@@ -21,7 +21,7 @@ export default {
 
   // only run these tests
   testMatch: [
-    "<rootDir>/client/src/pages/Auth/*.test.js",
+    "<rootDir>/client/src/**/*.test.js",
     "<rootDir>/client/src/hooks/useCategory.test.js",
     "<rootDir>/client/src/pages/Categories.test.js",
     "<rootDir>/client/src/pages/CartPage.test.js",
