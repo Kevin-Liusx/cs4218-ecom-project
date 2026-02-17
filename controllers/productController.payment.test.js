@@ -1,7 +1,7 @@
 /**
  * Test written by Ng Hong Ray, A0253509A
  *
- * external dependencies (Braintree gateway, Order model, dotenv) are  mocked
+ * external dependencies (Braintree gateway, Order model, dotenv) are mocked
  * to ensure only controller logic, validation, and side-effects are tested.
  *
  * Testing Principles Applied:
@@ -15,24 +15,30 @@
  * 2. Boundary Value Analysis (BVA)
  * - Cart: empty (rejected) vs multi-item cart
  * - Price validation: NaN and negative values
- * 
+ *
  * 3. Validation Testing
  * - Tests explicitly cover validation logic for missing/invalid data
- * - This is written to improve branch coverage and 
- * 
+ * - This is written to improve branch coverage and
+ *
  * Focus: Validation logic, payment flow correctness, error handling,
  * and prevention of double responses.
  */
 
-import { jest, describe, test, expect, beforeEach } from "@jest/globals";
+const { describe, test, expect, beforeEach } = require("@jest/globals");
 
 const flushPromises = () => new Promise((r) => setImmediate(r));
 
 function makeRes() {
   const res = {};
   res.status = jest.fn(() => res);
-  res.send = jest.fn(() => { res.headersSent = true; return res; });
-  res.json = jest.fn(() => { res.headersSent = true; return res; });
+  res.send = jest.fn(() => {
+    res.headersSent = true;
+    return res;
+  });
+  res.json = jest.fn(() => {
+    res.headersSent = true;
+    return res;
+  });
   return res;
 }
 
@@ -44,7 +50,7 @@ describe("Product Payment Controllers: ", () => {
   let OrderModelMock;
   let OrderSaveMock;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
 
@@ -56,22 +62,24 @@ describe("Product Payment Controllers: ", () => {
       transaction: { sale: jest.fn() },
     };
 
-    await jest.unstable_mockModule("dotenv", () => ({ default: { config: jest.fn() } }));
+    // CommonJS-safe mocks (must happen before requiring the module under test)
+    jest.doMock("dotenv", () => ({ config: jest.fn() }));
 
-    await jest.unstable_mockModule("../models/productModel.js", () => ({ default: {} }));
-    await jest.unstable_mockModule("../models/categoryModel.js", () => ({ default: {} }));
-    await jest.unstable_mockModule("../models/orderModel.js", () => ({ default: OrderModelMock }));
+    jest.doMock("../models/productModel.js", () => ({}));
+    jest.doMock("../models/categoryModel.js", () => ({}));
+    jest.doMock("../models/orderModel.js", () => OrderModelMock);
 
-    await jest.unstable_mockModule("braintree", () => ({
+    jest.doMock("braintree", () => ({
+      Environment: { Sandbox: "SANDBOX_ENV" },
+      BraintreeGateway: jest.fn(() => gatewayMock),
       default: {
         Environment: { Sandbox: "SANDBOX_ENV" },
         BraintreeGateway: jest.fn(() => gatewayMock),
       },
-      Environment: { Sandbox: "SANDBOX_ENV" },
-      BraintreeGateway: jest.fn(() => gatewayMock),
     }));
 
-    const mod = await import("../controllers/productController.js");
+    // Load controllers AFTER mocks
+    const mod = require("../controllers/productController.js");
     braintreeTokenController = mod.braintreeTokenController;
     brainTreePaymentController = mod.brainTreePaymentController;
   });
@@ -91,7 +99,7 @@ describe("Product Payment Controllers: ", () => {
       expect(res.send).toHaveBeenCalledWith(err);
     });
 
-    //Equivalence Partitioning
+    // Equivalence Partitioning
     test("generate success => send(response)", async () => {
       const req = {};
       const res = makeRes();
@@ -137,7 +145,7 @@ describe("Product Payment Controllers: ", () => {
       expect(res.json).not.toHaveBeenCalled();
     });
 
-    //Equivalence Partitioning + Boundary Value Analysis
+    // Equivalence Partitioning + Boundary Value Analysis
     test("multi-item cart => amount '30.50'; success => ok true", async () => {
       const req = {
         body: { nonce: "n2", cart: [{ price: 10 }, { price: 20 }, { price: 0.5 }] },
@@ -157,7 +165,7 @@ describe("Product Payment Controllers: ", () => {
       expect(res.json).toHaveBeenCalledWith({ ok: true });
     });
 
-    //Equivalence Partitioning
+    // Equivalence Partitioning
     test("sale callback error + no result => 500 + send(err) + no order", async () => {
       const req = { body: { nonce: "n3", cart: [{ price: 10 }] }, user: { _id: "u3" } };
       const res = makeRes();
@@ -172,7 +180,7 @@ describe("Product Payment Controllers: ", () => {
       expect(OrderModelMock).not.toHaveBeenCalled();
     });
 
-    //Equivalence Partitioning
+    // Equivalence Partitioning
     test("result.success=false => 500 + send(message) + no order", async () => {
       const req = { body: { nonce: "n4", cart: [{ price: 10 }] }, user: { _id: "u4" } };
       const res = makeRes();
@@ -215,7 +223,7 @@ describe("Product Payment Controllers: ", () => {
       expect(res.json).toHaveBeenCalledTimes(1);
       expect(res.json).toHaveBeenCalledWith({ ok: true });
     });
-    
+
     test("missing nonce -> 400", async () => {
       const req = { body: { cart: [{ price: 10 }] }, user: { _id: "u7" } }; // nonce missing
       const res = makeRes();
