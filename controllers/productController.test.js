@@ -9,6 +9,14 @@ const mockProductFindByIdAndUpdate = jest.fn();
 const mockReadFileSync = jest.fn();
 const mockSlugify = jest.fn();
 
+beforeAll(() => {
+  jest.spyOn(console, "log").mockImplementation(() => {});
+});
+
+afterAll(() => {
+  console.log.mockRestore();
+});
+
 // We only need the constructor + the specific static methods used by the 3 controllers
 const mockProductModel = jest.fn(function (doc) {
   Object.assign(this, doc);
