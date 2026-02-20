@@ -1,3 +1,4 @@
+// Improved by Dong Cheng-Yu, A0262348B
 import React, { useState } from "react";
 import Layout from "./../../components/Layout";
 import axios from "axios";
@@ -43,7 +44,7 @@ const Login = () => {
         toast.error(res?.data?.message || "Login failed");
       }
     } catch (error) {
-      console.log(error);
+      console.error(error);
       toast.error(error?.response?.data?.message || "Something went wrong");
     }
   };

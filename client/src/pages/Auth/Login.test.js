@@ -28,14 +28,25 @@ jest.mock("../../context/auth", () => ({
   useAuth: jest.fn(),
 }));
 
+const localStorageMock = {
+  setItem: jest.fn(),
+  getItem: jest.fn(),
+  removeItem: jest.fn(),
+};
+Object.defineProperty(window, "localStorage", {
+  value: localStorageMock,
+  writable: true,
+  configurable: true,
+});
+
 describe("Login", () => {
   let setAuthMock;
   let navigateMock;
-  let consoleLogSpy;
+  let consoleErrorSpy;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    consoleLogSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    consoleErrorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
 
     setAuthMock = jest.fn();
     navigateMock = jest.fn();
@@ -43,20 +54,10 @@ describe("Login", () => {
     useAuth.mockReturnValue([{ user: null, token: "" }, setAuthMock]);
     useNavigate.mockReturnValue(navigateMock);
     useLocation.mockReturnValue({ state: "/cart" });
-
-    Object.defineProperty(window, "localStorage", {
-      value: {
-        setItem: jest.fn(),
-        getItem: jest.fn(),
-        removeItem: jest.fn(),
-      },
-      writable: true,
-      configurable: true,
-    });
   });
 
   afterEach(() => {
-    consoleLogSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
   });
 
   it("renders login form with required inputs", () => {
@@ -68,6 +69,16 @@ describe("Login", () => {
       screen.getByPlaceholderText("Enter Your Password"),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "LOGIN" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Forgot Password" }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders all fields empty on initial load", () => {
+    render(<Login />);
+
+    expect(screen.getByPlaceholderText("Enter Your Email")).toHaveValue("");
+    expect(screen.getByPlaceholderText("Enter Your Password")).toHaveValue("");
   });
 
   it("submits trimmed email and password to login endpoint", async () => {
@@ -93,7 +104,30 @@ describe("Login", () => {
     });
   });
 
-  it("handles successful login: shows toast, updates auth, persists auth, and redirects to location state", async () => {
+  it("does not trim password field", async () => {
+    axios.post.mockResolvedValue({
+      data: { success: false, message: "Invalid" },
+    });
+    render(<Login />);
+
+    fireEvent.change(screen.getByPlaceholderText("Enter Your Email"), {
+      target: { value: "test@example.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Enter Your Password"), {
+      target: { value: "  password123  " },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "LOGIN" }));
+
+    await waitFor(() => {
+      expect(axios.post).toHaveBeenCalledWith("/api/v1/auth/login", {
+        email: "test@example.com",
+        password: "  password123  ",
+      });
+    });
+  });
+
+  it("shows success toast on successful login", async () => {
     axios.post.mockResolvedValue({
       data: {
         success: true,
@@ -122,19 +156,87 @@ describe("Login", () => {
         },
       });
     });
+  });
 
-    expect(setAuthMock).toHaveBeenCalledWith({
-      user: { _id: "u1", name: "John Doe" },
-      token: "mockToken",
-    });
-    expect(window.localStorage.setItem).toHaveBeenCalledWith(
-      "auth",
-      JSON.stringify({
+  it("updates auth context on successful login", async () => {
+    axios.post.mockResolvedValue({
+      data: {
+        success: true,
+        message: "Login Successful",
         user: { _id: "u1", name: "John Doe" },
         token: "mockToken",
-      }),
-    );
-    expect(navigateMock).toHaveBeenCalledWith("/cart");
+      },
+    });
+    render(<Login />);
+
+    fireEvent.change(screen.getByPlaceholderText("Enter Your Email"), {
+      target: { value: "test@example.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Enter Your Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "LOGIN" }));
+
+    await waitFor(() => {
+      expect(setAuthMock).toHaveBeenCalledWith({
+        user: { _id: "u1", name: "John Doe" },
+        token: "mockToken",
+      });
+    });
+  });
+
+  it("persists auth to localStorage on successful login", async () => {
+    axios.post.mockResolvedValue({
+      data: {
+        success: true,
+        message: "Login Successful",
+        user: { _id: "u1", name: "John Doe" },
+        token: "mockToken",
+      },
+    });
+    render(<Login />);
+
+    fireEvent.change(screen.getByPlaceholderText("Enter Your Email"), {
+      target: { value: "test@example.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Enter Your Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "LOGIN" }));
+
+    await waitFor(() => {
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        "auth",
+        JSON.stringify({
+          user: { _id: "u1", name: "John Doe" },
+          token: "mockToken",
+        }),
+      );
+    });
+  });
+
+  it("redirects to location state on successful login", async () => {
+    axios.post.mockResolvedValue({
+      data: {
+        success: true,
+        message: "Login Successful",
+        user: { _id: "u1", name: "John Doe" },
+        token: "mockToken",
+      },
+    });
+    render(<Login />);
+
+    fireEvent.change(screen.getByPlaceholderText("Enter Your Email"), {
+      target: { value: "test@example.com" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Enter Your Password"), {
+      target: { value: "password123" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "LOGIN" }));
+
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith("/cart");
+    });
   });
 
   it("uses default success message when backend message is missing", async () => {
@@ -192,7 +294,7 @@ describe("Login", () => {
     });
 
     expect(setAuthMock).not.toHaveBeenCalled();
-    expect(window.localStorage.setItem).not.toHaveBeenCalled();
+    expect(localStorageMock.setItem).not.toHaveBeenCalled();
     expect(navigateMock).not.toHaveBeenCalled();
   });
 
@@ -234,6 +336,7 @@ describe("Login", () => {
     });
 
     expect(setAuthMock).not.toHaveBeenCalled();
+    expect(localStorageMock.setItem).not.toHaveBeenCalled();
     expect(navigateMock).not.toHaveBeenCalled();
   });
 
@@ -254,6 +357,8 @@ describe("Login", () => {
     });
 
     expect(setAuthMock).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.any(Error));
+    expect(localStorageMock.setItem).not.toHaveBeenCalled();
     expect(navigateMock).not.toHaveBeenCalled();
   });
 
