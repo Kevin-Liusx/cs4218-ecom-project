@@ -239,7 +239,7 @@ describe("Login", () => {
     });
   });
 
-  it("uses default success message when backend message is missing", async () => {
+  it("uses default success message and redirects to / when location state is null", async () => {
     axios.post.mockResolvedValue({
       data: {
         success: true,
@@ -268,7 +268,6 @@ describe("Login", () => {
         },
       });
     });
-
     expect(navigateMock).toHaveBeenCalledWith("/");
   });
 
@@ -292,7 +291,6 @@ describe("Login", () => {
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Invalid credentials");
     });
-
     expect(setAuthMock).not.toHaveBeenCalled();
     expect(localStorageMock.setItem).not.toHaveBeenCalled();
     expect(navigateMock).not.toHaveBeenCalled();
@@ -313,6 +311,9 @@ describe("Login", () => {
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Login failed");
     });
+    expect(setAuthMock).not.toHaveBeenCalled();
+    expect(localStorageMock.setItem).not.toHaveBeenCalled();
+    expect(navigateMock).not.toHaveBeenCalled();
   });
 
   it("uses backend error response message when request throws with response data", async () => {
@@ -334,10 +335,10 @@ describe("Login", () => {
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Account temporarily locked");
     });
-
     expect(setAuthMock).not.toHaveBeenCalled();
     expect(localStorageMock.setItem).not.toHaveBeenCalled();
     expect(navigateMock).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalled();
   });
 
   it("uses fallback error message when request throws generic error", async () => {
@@ -355,7 +356,6 @@ describe("Login", () => {
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith("Something went wrong");
     });
-
     expect(setAuthMock).not.toHaveBeenCalled();
     expect(consoleErrorSpy).toHaveBeenCalledWith(expect.any(Error));
     expect(localStorageMock.setItem).not.toHaveBeenCalled();
