@@ -34,7 +34,7 @@ export default {
     "client/src/pages/Auth/**",
     "client/src/pages/Auth/Login.js",
     "client/src/pages/Auth/Register.js",
-    "client/src/pages/admin/AdminOrders.js",
+    "client/src/pages/admin/*.js",
     "client/src/pages/user/Dashboard.js",
     "client/src/pages/CategoryProduct.js",
     "client/src/pages/ProductDetails.js",
@@ -43,6 +43,7 @@ export default {
     "client/src/pages/Categories.js",
     "client/src/pages/CartPage.js",
     "client/src/context/cart.js",
+    "client/src/components/Routes/*.js",
   ],
   coverageThreshold: {
     global: {
