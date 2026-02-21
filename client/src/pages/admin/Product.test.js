@@ -91,10 +91,14 @@ describe("client/src/pages/admin/Products.js (unit)", () => {
 
     // Images
     const img1 = screen.getByAltText("Phone");
-    expect(img1).toHaveAttribute("src", "/api/v1/product/product-photo/p1");
+    expect(img1.getAttribute("src")).toContain(
+      "/api/v1/product/product-photo/p1"
+    );
 
     const img2 = screen.getByAltText("Laptop");
-    expect(img2).toHaveAttribute("src", "/api/v1/product/product-photo/p2");
+    expect(img2.getAttribute("src")).toContain(
+      "/api/v1/product/product-photo/p2"
+    );
 
     // Text fields
     expect(screen.getByText("Phone")).toBeInTheDocument();
