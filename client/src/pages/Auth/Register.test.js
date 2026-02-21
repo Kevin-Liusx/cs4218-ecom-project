@@ -49,7 +49,7 @@ describe("Register", () => {
     });
     fireEvent.change(
       screen.getByPlaceholderText("What is Your Favorite sports"),
-      { target: { value: "Football" } },
+      { target: { value: "Football" } }
     );
   };
 
@@ -60,17 +60,9 @@ describe("Register", () => {
     useNavigate.mockReturnValue(navigateMock);
   });
 
-  it("should register the user successfully", async () => {
-    axios.post.mockResolvedValueOnce({ data: { success: true } });
-    axios.get.mockResolvedValueOnce({ data: { categories: [] } });
-
-    const { getByText, getByPlaceholderText } = render(
-      <MemoryRouter initialEntries={["/register"]}>
-        <Routes>
-          <Route path="/register" element={<Register />} />
-        </Routes>
-      </MemoryRouter>
-    );
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+  });
 
   it("renders register form with required fields", () => {
     render(<Register />);
@@ -79,10 +71,10 @@ describe("Register", () => {
     expect(screen.getByPlaceholderText("Enter Your Name")).toBeInTheDocument();
     expect(screen.getByPlaceholderText("Enter Your Email")).toBeInTheDocument();
     expect(
-      screen.getByPlaceholderText("Enter Your Password"),
+      screen.getByPlaceholderText("Enter Your Password")
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "REGISTER" }),
+      screen.getByRole("button", { name: "REGISTER" })
     ).toBeInTheDocument();
   });
 
@@ -112,7 +104,7 @@ describe("Register", () => {
     });
     fireEvent.change(
       screen.getByPlaceholderText("What is Your Favorite sports"),
-      { target: { value: " Football " } },
+      { target: { value: " Football " } }
     );
 
     fireEvent.click(screen.getByRole("button", { name: "REGISTER" }));
@@ -139,23 +131,17 @@ describe("Register", () => {
 
     await waitFor(() => {
       expect(toast.success).toHaveBeenCalledWith(
-        "Register Successfully, please login",
+        "Register Successfully, please login"
       );
     });
     expect(navigateMock).toHaveBeenCalledWith("/login");
   });
 
-  it("should display error message on failed registration", async () => {
-    axios.post.mockRejectedValueOnce({ message: "User already exists" });
-    axios.get.mockResolvedValueOnce({ data: [] });
-
-    const { getByText, getByPlaceholderText } = render(
-      <MemoryRouter initialEntries={["/register"]}>
-        <Routes>
-          <Route path="/register" element={<Register />} />
-        </Routes>
-      </MemoryRouter>
-    );
+  it("shows backend error message when registration returns success false", async () => {
+    axios.post.mockResolvedValue({
+      data: { success: false, message: "User already exists" },
+    });
+    render(<Register />);
 
     fillRequiredFields();
     fireEvent.click(screen.getByRole("button", { name: "REGISTER" }));
@@ -233,14 +219,14 @@ describe("Register", () => {
     });
     fireEvent.change(
       screen.getByPlaceholderText("What is Your Favorite sports"),
-      { target: { value: "Football" } },
+      { target: { value: "Football" } }
     );
 
     fireEvent.click(screen.getByRole("button", { name: "REGISTER" }));
 
     await waitFor(() => {
       expect(toast.error).toHaveBeenCalledWith(
-        "Please fill all required fields",
+        "Please fill all required fields"
       );
     });
     expect(axios.post).not.toHaveBeenCalled();
