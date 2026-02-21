@@ -1,3 +1,11 @@
+jest.mock("braintree", () => ({
+  BraintreeGateway: jest.fn().mockImplementation(() => ({
+    clientToken: { generate: jest.fn() },
+    transaction: { sale: jest.fn() },
+  })),
+  Environment: { Sandbox: "sandbox" },
+}));
+
 import {
   getProductController,
   getSingleProductController,
