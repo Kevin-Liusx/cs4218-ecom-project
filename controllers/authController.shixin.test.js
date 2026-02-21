@@ -288,7 +288,7 @@ describe("controllers/authController.js (selected unit tests)", () => {
       expect(res.send).toHaveBeenCalledWith(
         expect.objectContaining({
           success: false,
-          message: "Error WHile Geting Orders",
+          message: "Error While Getting Orders",
           error: err,
         })
       );
