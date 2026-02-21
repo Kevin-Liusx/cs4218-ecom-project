@@ -175,11 +175,10 @@ describe('Product Controller Tests under the "Product" feature', () => {
       };
       productModel.findOne.mockReturnValue(mockQuery);
       await getSingleProductController(req, res);
-      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.status).toHaveBeenCalledWith(404);
       expect(res.send).toHaveBeenCalledWith({
-        success: true,
-        message: 'Single Product Fetched',
-        product: null,
+        success: false,
+        message: 'Product not found',
       });
     });
 
@@ -211,7 +210,7 @@ describe('Product Controller Tests under the "Product" feature', () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.send).toHaveBeenCalledWith({
         success: false,
-        message: 'Eror while getitng single product',
+        message: 'Error while getting single product',
         error: mockError,
       });
     });
@@ -317,7 +316,7 @@ describe('Product Controller Tests under the "Product" feature', () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.send).toHaveBeenCalledWith({
         success: false,
-        message: 'Erorr while getting photo',
+        message: 'Error while getting photo',
         error: mockError,
       });
     });
@@ -478,7 +477,7 @@ describe('Product Controller Tests under the "Product" feature', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.send).toHaveBeenCalledWith({
         success: false,
-        message: 'Error WHile Filtering Products',
+        message: 'Error while Filtering Products',
         error: mockError,
       });
     });
