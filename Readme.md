@@ -180,7 +180,7 @@ In not particular order:
 
     **Admin View Products**
 
-    - pages/admin/Products.js
+    - pages/admin/Products.test.js
     - controllers/productController.part1.test.js
       - createProductController
       - deleteProductController
