@@ -1,3 +1,9 @@
+/**
+ * Bug fixed by: Ng Hong Ray, A0253509A
+ * Bug Description:
+ * 1. "ADD TO CART" button did not update localStorage, causing cart state to not persist across page reloads.
+ * 2. Clicking "More Details" on a related product did not navigate to the correct product details page due to missing real router integration in tests.
+ */
 import React, { useState, useEffect } from "react";
 import Layout from "./../components/Layout";
 import axios from "axios";
